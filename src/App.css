@@ -245,6 +245,111 @@ input:checked + .slider:before { transform: translateX(16px); }
   height: 100%;
 }
 
+.material-summary-bar {
+  display: flex;
+  height: 12px;
+  width: 100%;
+  background: #e2e8f0;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 25px;
+  border: 1px solid var(--border);
+}
+
+/* Summary Header & Help UI */
+.summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  position: relative;
+}
+
+.summary-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.summary-title label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+}
+
+.help-icon-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: white;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.help-icon-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+/* Tooltip Styling */
+.help-tooltip {
+  position: absolute;
+  top: 30px;
+  left: 0;
+  background: white;
+  border: 1px solid var(--border);
+  padding: 15px;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  width: 400px;
+}
+
+.help-tooltip h4 { margin: 0 0 10px 0; font-size: 13px; color: var(--text-primary); }
+.help-tooltip ul { list-style: none; padding: 0; margin: 0; }
+.help-tooltip li { 
+  display: flex; 
+  align-items: center; 
+  gap: 10px; 
+  font-size: 12px; 
+  margin-bottom: 6px; 
+  color: var(--text-secondary);
+}
+
+.dot { width: 8px; height: 8px; border-radius: 50%; }
+.dot.used { background: var(--success); }
+.dot.dust { background: #94a3b8; }
+.dot.waste { background: var(--danger); opacity: 0.6; }
+
+/* The Summary Bar itself */
+.material-summary-bar {
+  display: flex;
+  height: 14px;
+  width: 100%;
+  background: #f1f5f9;
+  border-radius: 7px;
+  overflow: hidden;
+  margin-bottom: 30px;
+  border: 1px solid var(--border);
+}
+
+.summary-segment.used { background: var(--success); }
+.summary-segment.dust { background: #94a3b8; }
+.summary-segment.waste { background: var(--danger); opacity: 0.6; }
+
+.summary-segment.used { background: var(--success); }
+.summary-segment.dust { background: #94a3b8; }
+.summary-segment.waste { background: var(--danger); opacity: 0.6; }
+
 .cut-piece:hover::after {
   content: attr(title);
   position: absolute;

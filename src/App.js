@@ -356,8 +356,6 @@ const optimizedBestFit = (stockLen, kerf, partsList, sortAsc = false, useFullKer
       if (usedIndices.has(i)) continue;
       const part = parts[i];
       
-      // Full Kerf Logic: Every part gets a kerf (Opticutter style)
-      // Standard Logic: Only gaps between parts get a kerf
       const kerfToApply = useFullKerf ? kerf : (currentCuts.length === 0 ? 0 : kerf);
       
       if (currentUsedWithKerf + kerfToApply + part.len <= stockLen) {
@@ -462,6 +460,7 @@ export default function App() {
   const [kerf, setKerf] = useState(0.125);
   const [optimize, setOptimize] = useState(false);
   const [sortAsc, setSortAsc] = useState(false);
+  const [showHelp, setShowHelp] = useState(false); // FIXED: Variable first, Function second
   const [parts, setParts] = useState([{ name: '', length: '', qty: '' }]);
   const [results, setResults] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -587,7 +586,7 @@ export default function App() {
             <input type="checkbox" checked={optimize} onChange={() => setOptimize(!optimize)} />
             <span className="slider round"></span>
           </label>
-          <span className="toggle-label">Full Kerf Logic</span>
+          <span className="toggle-label">Optimize Results (full kerf logic)</span>
         </div>
 
         <div className="toggle-container">
@@ -647,25 +646,52 @@ export default function App() {
         </div>
 
         {stats && (
-          <div className="stats-dashboard">
-            <div className={`stat-card highlight status-${stats.status}`}>
-              <label>Used total length (Yield)</label>
-              <strong>{stats.totalUsedStockLength}″ ({stats.yieldPct}%)</strong>
+          <>
+            <div className="summary-header">
+              <div className="summary-title">
+                <label>Material Utilization Ratio</label>
+                <button className="help-icon-btn" onClick={() => setShowHelp(!showHelp)}>?</button>
+              </div>
+              {showHelp && (
+                <div className="help-tooltip">
+                  <h4>Understanding the Summary Bar</h4>
+                  <ul>
+                    <li><span className="dot used"></span> <strong>Used:</strong> Raw material in finished parts.</li>
+                    <li><span className="dot dust"></span> <strong>Blade Dust:</strong> Total material lost to the saw blade thickness (Kerf).</li>
+                    <li><span className="dot waste"></span> <strong>Remnant:</strong> Off-cuts and waste left on the bars.</li>
+                  </ul>
+                </div>
+              )}
             </div>
-            <div className="stat-card"><label>Kerf / Blade Size</label><strong>{fmt(kerf)}″</strong></div>
-            <div className="stat-card">
-              <label>Stocks Required</label>
-              <strong>{stats.totalBars} ({stats.stockLenValue}″)</strong>
+            
+            
+
+            <div className="material-summary-bar no-print">
+              <div className="summary-segment used" style={{ width: `${stats.yieldPct}%` }} title={`Used: ${stats.yieldPct}%`}></div>
+              <div className="summary-segment dust" style={{ width: `${(parseFloat(stats.sumBladeDust) / parseFloat(stats.totalUsedStockLength)) * 100}%` }} title="Blade Dust"></div>
+              <div className="summary-segment waste" style={{ flex: 1 }} title="Remnant Waste"></div>
             </div>
-            <div className="stat-card"><label>Total Parts (Length)</label><strong>{stats.totalPartsCount} ({stats.totalPartsLen}″)</strong></div>
-            <div className="stat-card"><label>Unique Layouts</label><strong>{stats.uniqueLayouts}</strong></div>
-            <div className="stat-card"><label>Total Cuts</label><strong>{stats.totalPartsCount}</strong></div>
-            <div className={`stat-card status-${stats.status === 'bad' ? 'bad' : ''}`}>
-              <label>Sum of Waste</label>
-              <strong className="primary-text">{stats.sumWaste}″</strong>
+
+            <div className="stats-dashboard">
+              <div className={`stat-card highlight status-${stats.status}`}>
+                <label>Used total length (Yield)</label>
+                <strong>{stats.totalUsedStockLength}″ ({stats.yieldPct}%)</strong>
+              </div>
+              <div className="stat-card"><label>Kerf / Blade Size</label><strong>{fmt(kerf)}″</strong></div>
+              <div className="stat-card">
+                <label>Stocks Required</label>
+                <strong>{stats.totalBars} ({stats.stockLenValue}″)</strong>
+              </div>
+              <div className="stat-card"><label>Total Parts (Length)</label><strong>{stats.totalPartsCount} ({stats.totalPartsLen}″)</strong></div>
+              <div className="stat-card"><label>Unique Layouts</label><strong>{stats.uniqueLayouts}</strong></div>
+              <div className="stat-card"><label>Total Cuts</label><strong>{stats.totalPartsCount}</strong></div>
+              <div className={`stat-card status-${stats.status === 'bad' ? 'bad' : ''}`}>
+                <label>Sum of Waste</label>
+                <strong className="primary-text">{stats.sumWaste}″</strong>
+              </div>
+              <div className="stat-card"><label>Total Blade Dust</label><strong>{stats.sumBladeDust}″</strong></div>
             </div>
-            <div className="stat-card"><label>Total Blade Dust</label><strong>{stats.sumBladeDust}″</strong></div>
-          </div>
+          </>
         )}
         <div className="layout-list">
           {results && results.map((l, i) => <LayoutItem key={i} layout={l} index={i} partColorMap={partColorMap} optimize={optimize} kerf={kerf} />)}
