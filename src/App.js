@@ -21,35 +21,35 @@ const optimizedBestFit = (stockLen, kerf, partsList, sortAsc = false, useFullKer
       for (let i = 0; i < qty; i++) parts.push({ len, name });
     }
   });
-  
+
   if (parts.length === 0) return [];
   parts.sort((a, b) => sortAsc ? a.len - b.len : b.len - a.len);
-  
+
   const bars = [];
   const usedIndices = new Set();
-  
+
   while (usedIndices.size < parts.length) {
     let currentCuts = [];
     let currentUsedWithKerf = 0;
-    
+
     for (let i = 0; i < parts.length; i++) {
       if (usedIndices.has(i)) continue;
       const part = parts[i];
       const kerfToApply = useFullKerf ? kerf : (currentCuts.length === 0 ? 0 : kerf);
-      
+
       if (currentUsedWithKerf + kerfToApply + part.len <= stockLen) {
         currentCuts.push(part);
         currentUsedWithKerf += (kerfToApply + part.len);
         usedIndices.add(i);
       }
     }
-    
+
     if (currentCuts.length > 0) {
       const sumOfParts = currentCuts.reduce((a, b) => a + b.len, 0);
       const totalBladeLoss = Math.max(0, (currentCuts.length - 1) * kerf);
       const opticutterLoss = currentCuts.length * kerf;
       const key = currentCuts.map(c => c.len).sort((a, b) => b - a).join(',');
-      
+
       bars.push({
         stockLength: stockLen,
         cuts: currentCuts,
@@ -67,10 +67,10 @@ const optimizedBestFit = (stockLen, kerf, partsList, sortAsc = false, useFullKer
 const LayoutItem = ({ layout, index, partColorMap, optimize, kerf }) => {
   const [isOpen, setIsOpen] = useState(false);
   const groupedCuts = useMemo(() => {
-    return layout.cuts.reduce((acc, c) => { 
+    return layout.cuts.reduce((acc, c) => {
       const label = `${c.name ? c.name + ': ' : ''}${fmt(c.len)}″`;
-      acc[label] = (acc[label] || 0) + 1; 
-      return acc; 
+      acc[label] = (acc[label] || 0) + 1;
+      return acc;
     }, {});
   }, [layout.cuts]);
 
@@ -113,7 +113,7 @@ const LayoutItem = ({ layout, index, partColorMap, optimize, kerf }) => {
           <div className="details-column">
             <span className="col-label">Required Cuts</span>
             <span className="col-value highlight">
-               {Object.entries(groupedCuts).map(([label, qty]) => `${qty}x ${label}`).join(', ')}
+              {Object.entries(groupedCuts).map(([label, qty]) => `${qty}x ${label}`).join(', ')}
             </span>
           </div>
           <div className="details-column">
@@ -136,6 +136,7 @@ export default function App() {
   const [optimize, setOptimize] = useState(false);
   const [sortAsc, setSortAsc] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [showHelp2, setShowHelp2] = useState(false);
   const [parts, setParts] = useState([{ name: '', length: '', qty: '' }]);
   const [results, setResults] = useState(null);
   const [isCalculating, setIsCalculating] = useState(false);
@@ -143,7 +144,7 @@ export default function App() {
   const fileInputRef = useRef(null);
 
   const partColorMap = useMemo(() => {
-    const uniqueLens = [...new Set(parts.map(p => Number(p.length)).filter(l => l > 0))].sort((a,b) => b-a);
+    const uniqueLens = [...new Set(parts.map(p => Number(p.length)).filter(l => l > 0))].sort((a, b) => b - a);
     const brandColors = ['#c31d2a', '#353b3f', '#612d31', '#7e8f9c', '#000000', '#94a3b8'];
     const map = {};
     uniqueLens.forEach((len, i) => {
@@ -177,7 +178,7 @@ export default function App() {
     const totalUsedStockLength = totalBars * Number(stockLength);
     const wasteField = optimize ? "opticutterWaste" : "trueWaste";
     const kerfField = optimize ? "opticutterKerf" : "totalKerf";
-    
+
     const sumWaste = results.reduce((a, b) => a + (Number(b[wasteField]) * Number(b.repetition)), 0);
     const sumBladeDust = results.reduce((a, b) => a + (Number(b[kerfField]) * Number(b.repetition)), 0);
     const yieldNum = totalUsedStockLength > 0 ? (totalPartsLen / totalUsedStockLength) * 100 : 0;
@@ -222,11 +223,11 @@ export default function App() {
         const cols = line.split(',').map(s => s.trim()).filter(s => s !== "");
         if (cols.length < 2) return null;
         if (index === 0 && (cols[0].toLowerCase().includes("name") || cols[1].toLowerCase().includes("length"))) return null;
-        return (cols.length >= 3) 
+        return (cols.length >= 3)
           ? { name: cols[0], length: cols[1], qty: cols[2] }
           : { name: '', length: cols[0], qty: cols[1] };
       }).filter(p => p && p.length !== "" && !isNaN(parseFloat(p.length)));
-      
+
       if (newParts.length > 0) {
         setParts(newParts);
         setBulkFileName(file.name);
@@ -248,10 +249,10 @@ export default function App() {
     const wasteField = optimize ? "opticutterWaste" : "trueWaste";
     let csv = `Layout ID,Repetitions,Part Name,Length,Qty,Layout Waste\n`;
     results.forEach((l, i) => {
-      const counts = l.cuts.reduce((acc, c) => { 
+      const counts = l.cuts.reduce((acc, c) => {
         const key = `${c.name}|${c.len}`;
-        acc[key] = (acc[key] || 0) + 1; 
-        return acc; 
+        acc[key] = (acc[key] || 0) + 1;
+        return acc;
       }, {});
       Object.entries(counts).forEach(([key, qty], idx) => {
         const [name, len] = key.split('|');
@@ -270,8 +271,54 @@ export default function App() {
     <div className="app-container">
       <aside className="sidebar no-print">
         <img src="/Monarch3Logo.svg" alt="Logo" className="company-logo" />
-        <h1 className="logo">Linear Cutting List <br/><span>Optimizer</span></h1>
-        
+        <div className="logo-stack">
+          <h1 className="logo-top">Linear Cutting List</h1>
+          <div className="logo-bottom">
+            <span>Optimizer</span>
+            <button className="help-icon-btn" onClick={() => setShowHelp2(!showHelp2)}>?</button>
+            {showHelp2 && (
+              <div className="help-tooltip2">
+                <h4>How To Use It:
+                </h4>
+                <ul>
+                  <li><strong>Stock & Blade:</strong> Set your raw material length and the thickness of your saw blade (Kerf). <br/>
+                  Default values are 144" and 0.125" respectively.</li>
+
+                  <li><strong>Optimized (Full Kerf):</strong>
+                    <br /><em>- OFF:</em> Only subtracts blade width between parts.
+                    <br /><em>- ON:</em> Subtracts blade width for <strong>every</strong> cut, including the very last one. Best for high-precision or where the edge cleanup is required on both sides of every part.
+                  </li>
+
+                  <li><strong>Smallest First:</strong>
+                    <br /><em>- OFF:</em> Fits the longest parts first (standard practice to reduce total waste).
+                    <br /><em>- ON:</em> Fits shortest parts first. Useful if you want to prioritize using up remnants for small pieces first.
+                  </li>
+
+                  <li><strong>Bulk Upload:</strong> 
+                  <br /><em>-</em> Upload a CSV with <i><strong>Name, Length<sup>*</sup>, Qty<sup>*</sup></strong></i> to save time.  
+                    <br /><em>- Clear File:</em> Removes the uploaded file and resets the parts list.
+                    <br/><em>-</em> You will be able to edit the list, but not add parts on top of the uploaded data.
+                    </li>
+
+                  <li><strong>Parts List:</strong>
+                    <br /><em>- Name:</em> Name the part to keep track of it
+                    <br /><em>- Length:</em> Specify the length of the part
+                    <br /><em>- Qty:</em> Specify the quantity of the part
+                    <br /><em>- <i>+ Add:</i></em> Add another part to the list
+                  </li>
+
+                  <li><strong>Calculate Layout:</strong> Calculate the parts list layout based on the current settings.</li>
+                  <li><strong>Reset All:</strong> Resets the whole application to its initial state.</li>
+                   <li><strong>+ Info</strong> View detailed information about the layout</li>
+                   <li><strong>CSV Report</strong> Download the results in a csv format</li>
+                   <li><strong>Print/PDF</strong> Download a PDF version of the results</li>
+
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="settings-box">
           <div className="input-group">
             <label>Stock (″)<span className='req'>*</span></label>
@@ -288,7 +335,7 @@ export default function App() {
             <input type="checkbox" checked={optimize} onChange={() => setOptimize(!optimize)} />
             <span className="slider round"></span>
           </label>
-          <span className="toggle-label">Full Kerf Logic</span>
+          <span className="toggle-label">Optimized Results (Full Kerf Logic)</span>
         </div>
 
         <div className="toggle-container">
@@ -302,7 +349,7 @@ export default function App() {
         <div className="parts-list-container">
           <div className="parts-header">
             <h3>Parts List</h3>
-            <div style={{display: 'flex', gap: '5px'}}>
+            <div style={{ display: 'flex', gap: '5px' }}>
               {!bulkFileName && (
                 <>
                   <button className="add-btn bulk" onClick={() => fileInputRef.current.click()}>Bulk</button>
@@ -313,31 +360,31 @@ export default function App() {
                 <button className="add-btn reset-small" onClick={handleClearData}>Clear File</button>
               )}
             </div>
-            <input type="file" ref={fileInputRef} style={{display:'none'}} accept=".csv,.txt" onChange={handleBulkUpload} />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".csv,.txt" onChange={handleBulkUpload} />
           </div>
 
           {bulkFileName && (
             <div className="bulk-file-badge">
-               📂 Active File: <span>{bulkFileName}</span>
+              📂 Active File: <span>{bulkFileName}</span>
             </div>
           )}
 
           <div className="parts-labels">
-            <span style={{flex: '1.2'}}>Name</span>
+            <span style={{ flex: '1.2' }}>Name</span>
             <span>Length<span className='req'>*</span></span>
             <span>Qty<span className='req'>*</span></span>
-            <span style={{flex: '0.3'}}></span>
+            <span style={{ flex: '0.3' }}></span>
           </div>
           <div className={`parts-scroll ${bulkFileName ? 'bulk-active' : ''}`}>
-          {parts.map((p, i) => {
+            {parts.map((p, i) => {
               const isTooLong = parseFloat(p.length) > parseFloat(stockLength);
               return (
                 <div key={i} className="part-entry-container">
                   <div className="part-entry">
-                    <input style={{flex: '1.2'}} type="text" placeholder="P1" value={p.name} disabled={!!bulkFileName} onChange={e => { const n = [...parts]; n[i].name = e.target.value; setParts(n); }} />
-                    <input type="number" placeholder="0.00" value={p.length} className={isTooLong ? 'error-border' : ''} disabled={!!bulkFileName} onChange={e => { const n = [...parts]; n[i].length = e.target.value; setParts(n); }} />
-                    <input type="number" placeholder="0" value={p.qty} disabled={!!bulkFileName} onChange={e => { const n = [...parts]; n[i].qty = e.target.value; setParts(n); }} />
-                    {!bulkFileName && <button className="del-btn" style={{flex: '0.3'}} onClick={() => setParts(parts.filter((_, idx) => idx !== i))}>×</button>}
+                    <input style={{ flex: '1.2' }} type="text" placeholder="P1" value={p.name} onChange={e => { const n = [...parts]; n[i].name = e.target.value; setParts(n); }} />
+                    <input type="number" placeholder="0.00" value={p.length} className={isTooLong ? 'error-border' : ''} onChange={e => { const n = [...parts]; n[i].length = e.target.value; setParts(n); }} />
+                    <input type="number" placeholder="0" value={p.qty} onChange={e => { const n = [...parts]; n[i].qty = e.target.value; setParts(n); }} />
+                    {!bulkFileName && <button className="del-btn" style={{ flex: '0.3' }} onClick={() => setParts(parts.filter((_, idx) => idx !== i))}>×</button>}
                   </div>
                   {isTooLong && <div className="error-text">! Part longer than stock</div>}
                 </div>
@@ -345,7 +392,7 @@ export default function App() {
             })}
           </div>
         </div>
-        
+
         <div className="action-buttons">
           {/* Real-time Sidebar Warnings */}
           {!validation.isValid && (
@@ -354,30 +401,31 @@ export default function App() {
             </div>
           )}
 
-          <button 
-            className={`main-calc-btn ${!validation.isValid ? 'disabled' : ''}`} 
-            onClick={handleCalculate} 
+          <button
+            className={`main-calc-btn ${!validation.isValid ? 'disabled' : ''}`}
+            onClick={handleCalculate}
             disabled={isCalculating || !validation.isValid}
           >
             {isCalculating ? 'Processing...' : 'Calculate Layout'}
           </button>
-          
+
           <button className="reset-btn" onClick={handleClearData}>Reset All</button>
-          <p style={{fontSize:'10px', textAlign:'center', marginTop:'10px'}}><span className='req'>*</span> Required fields</p>
+          {!results && (
+            <p style={{ fontSize: '10px', textAlign: 'center', marginTop: '10px' }}><span className='req'>*</span> Required fields</p>)}
         </div>
 
         {results && (
-            <div className="download-group">
-                <button className="export-btn csv" onClick={handleExportCSV}>CSV Report</button>
-                <button className="export-btn pdf" onClick={() => window.print()}>Print / PDF</button>
-            </div>
+          <div className="download-group">
+            <button className="export-btn csv" onClick={handleExportCSV}>CSV Report</button>
+            <button className="export-btn pdf" onClick={() => window.print()}>Print / PDF</button>
+          </div>
         )}
       </aside>
 
       <main className="results-view">
         <div className="print-header">
-            <img src="/Monarch3Logo.svg" alt="Logo" style={{width:'150px'}} />
-            <h2>Cutting Optimization Report</h2>
+          <img src="/Monarch3Logo.svg" alt="Logo" style={{ width: '150px' }} />
+          <h2>Cutting Optimization Report</h2>
         </div>
 
         {stats && (

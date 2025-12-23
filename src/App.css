@@ -278,20 +278,52 @@ input:checked + .slider:before { transform: translateX(16px); }
   text-transform: uppercase;
 }
 
+.logo-stack {
+  margin-bottom: 25px;
+}
+
+.logo-top {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--primary);
+  margin: 0;
+  line-height: 1;
+}
+
+.logo-bottom {
+  display: flex;
+  align-items: center; /* Keeps button centered with the text */
+  gap: 8px;            /* Space between 'Optimizer' and '?' */
+  margin-top: 4px;
+}
+
+.logo-bottom span {
+  color: var(--text-primary);
+  font-weight: 300;
+  font-size: 1.1rem;
+  text-transform: uppercase;
+}
+
+/* Adjust button size for the header context */
 .help-icon-btn {
   width: 18px;
   height: 18px;
+  font-size: 10px;
+  background: transparent;
+  border: 1px solid var(--text-muted);
+  color: var(--text-muted);
   border-radius: 50%;
-  border: 1px solid var(--border);
-  background: white;
-  color: var(--text-secondary);
-  font-size: 11px;
-  font-weight: 800;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+}
+
+.help-icon-btn:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
 }
 
 .help-icon-btn:hover {
@@ -314,6 +346,19 @@ input:checked + .slider:before { transform: translateX(16px); }
   width: 400px;
 }
 
+.help-tooltip2 {
+  position: absolute;
+  top: 10px;
+  left: 400px;
+  background: white;
+  border: 1px solid var(--border);
+  padding: 0px 15px 0px 15px;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  z-index: 100;
+  width: 400px;
+}
+
 .help-tooltip h4 { margin: 0 0 10px 0; font-size: 13px; color: var(--text-primary); }
 .help-tooltip ul { list-style: none; padding: 0; margin: 0; }
 .help-tooltip li { 
@@ -324,6 +369,8 @@ input:checked + .slider:before { transform: translateX(16px); }
   margin-bottom: 6px; 
   color: var(--text-secondary);
 }
+
+.help-tooltip2 li { list-style: none; padding: 0; margin: 6px; }
 
 .dot { width: 8px; height: 8px; border-radius: 50%; }
 .dot.used { background: var(--success); }
@@ -342,13 +389,6 @@ input:checked + .slider:before { transform: translateX(16px); }
 }
 
 .bulk-file-badge span { color: var(--primary); }
-
-.parts-scroll.bulk-active input {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #64748b;
-  cursor: not-allowed;
-}
 
 .add-btn.reset-small {
   background: #fee2e2;
