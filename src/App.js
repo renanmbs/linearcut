@@ -113,7 +113,12 @@ const LayoutItem = ({ layout, index, partColorMap, optimize, kerf }) => {
           <div className="details-column">
             <span className="col-label">Required Cuts</span>
             <span className="col-value highlight">
-              {Object.entries(groupedCuts).map(([label, qty]) => `${qty}x ${label}`).join(', ')}
+              {Object.entries(groupedCuts).map(([label, qty], idx) => (
+                <React.Fragment key={idx}>
+                  {idx > 0 && ", "}
+                  {qty}x <span style={{ color: 'black', fontWeight: 'bold' }}>{label}</span>
+                </React.Fragment>
+              ))}
             </span>
           </div>
           <div className="details-column">
@@ -145,13 +150,20 @@ export default function App() {
 
   const partColorMap = useMemo(() => {
     const uniqueLens = [...new Set(parts.map(p => Number(p.length)).filter(l => l > 0))].sort((a, b) => b - a);
+
+    // Your Core Brand Palette
     const brandColors = ['#c31d2a', '#353b3f', '#612d31', '#7e8f9c', '#000000', '#94a3b8'];
+
     const map = {};
     uniqueLens.forEach((len, i) => {
-      if (i < brandColors.length) map[len] = brandColors[i];
-      else {
-        const hue = (i * 137.508) % 360;
-        map[len] = `hsl(${hue}, 60%, 45%)`;
+      if (i < brandColors.length) {
+        // Use exact brand color for the first 6 unique lengths
+        map[len] = brandColors[i];
+      } else {
+        const baseColor = brandColors[i % brandColors.length];
+
+        const shade = i % 2 === 0 ? '80' : '4D';
+        map[len] = `${baseColor}${shade}`;
       }
     });
     return map;
@@ -221,11 +233,16 @@ export default function App() {
       const lines = text.split(/\r?\n/);
       const newParts = lines.map((line, index) => {
         const cols = line.split(',').map(s => s.trim()).filter(s => s !== "");
+
         if (cols.length < 2) return null;
-        if (index === 0 && (cols[0].toLowerCase().includes("name") || cols[1].toLowerCase().includes("length"))) return null;
+
+        // Skip header if first row contains "name" or "qty"
+        if (index === 0 && (cols[0].toLowerCase().includes("name") || cols[1].toLowerCase().includes("qty"))) return null;
+
         return (cols.length >= 3)
-          ? { name: cols[0], length: cols[1], qty: cols[2] }
-          : { name: '', length: cols[0], qty: cols[1] };
+          ? { name: cols[0], qty: cols[1], length: cols[2] } // Standard: Name, Qty, Length
+          : { name: '', qty: cols[0], length: cols[1] };    // Fallback: Qty, Length (Swapped this!)
+
       }).filter(p => p && p.length !== "" && !isNaN(parseFloat(p.length)));
 
       if (newParts.length > 0) {
@@ -239,7 +256,7 @@ export default function App() {
   };
 
   const handleClearData = () => {
-    setParts([{ name: '', length: '', qty: '' }]);
+    setParts([{ name: '', qty: '', length: '' }])
     setResults(null);
     setBulkFileName(null);
   };
@@ -247,7 +264,7 @@ export default function App() {
   const handleExportCSV = () => {
     if (!results) return;
     const wasteField = optimize ? "opticutterWaste" : "trueWaste";
-    let csv = `Layout ID,Repetitions,Part Name,Length,Qty,Layout Waste\n`;
+    let csv = `Layout ID,Repetitions,Part Name,Qty,Length,Layout Waste\n`;
     results.forEach((l, i) => {
       const counts = l.cuts.reduce((acc, c) => {
         const key = `${c.name}|${c.len}`;
@@ -256,7 +273,8 @@ export default function App() {
       }, {});
       Object.entries(counts).forEach(([key, qty], idx) => {
         const [name, len] = key.split('|');
-        csv += `${String.fromCharCode(65 + i)},${idx === 0 ? l.repetition : ''},${name},${len},${qty},${idx === 0 ? fmt(l[wasteField]) : ''}\n`;
+        const exportName = (name && name !== 'Part') ? name : `${len}" part`;
+        csv += `${String.fromCharCode(65 + i)},${idx === 0 ? l.repetition : ''},${exportName},${qty},${len},${idx === 0 ? fmt(l[wasteField]) : ''}\n`;
       });
     });
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -270,7 +288,14 @@ export default function App() {
   return (
     <div className="app-container">
       <aside className="sidebar no-print">
-        <img src="/Monarch3Logo.svg" alt="Logo" className="company-logo" />
+        <a href="https://monarchintranet.netlify.app/">
+          <img
+            src="/Monarch3Logo.svg"
+            alt="Logo"
+            className="company-logo"
+          />
+        </a>
+
         <div className="logo-stack">
           <h1 className="logo-top">Linear Cutting List</h1>
           <div className="logo-bottom">
@@ -281,8 +306,8 @@ export default function App() {
                 <h4>How To Use It:
                 </h4>
                 <ul>
-                  <li><strong>Stock & Blade:</strong> Set your raw material length and the thickness of your saw blade (Kerf). <br/>
-                  Default values are 144" and 0.125" respectively.</li>
+                  <li><strong>Stock & Blade:</strong> Set your raw material length and the thickness of your saw blade (Kerf). <br />
+                    Default values are 144" and 0.125" respectively.</li>
 
                   <li><strong>Optimized (Full Kerf):</strong>
                     <br /><em>- OFF:</em> Only subtracts blade width between parts.
@@ -294,11 +319,11 @@ export default function App() {
                     <br /><em>- ON:</em> Fits shortest parts first. Useful if you want to prioritize using up remnants for small pieces first.
                   </li>
 
-                  <li><strong>Bulk Upload:</strong> 
-                  <br /><em>-</em> Upload a CSV with <i><strong>Name, Length<sup>*</sup>, Qty<sup>*</sup></strong></i> to save time.  
+                  <li><strong>Bulk Upload:</strong>
+                    <br /><em>-</em> Upload a CSV with <i><strong>Name, Qty<sup>*</sup>, Length<sup>*</sup></strong></i> to save time.
                     <br /><em>- Clear File:</em> Removes the uploaded file and resets the parts list.
-                    <br/><em>-</em> You will be able to edit the list, but not add parts on top of the uploaded data.
-                    </li>
+                    <br /><em>-</em> You will be able to edit the list, but not add parts on top of the uploaded data.
+                  </li>
 
                   <li><strong>Parts List:</strong>
                     <br /><em>- Name:</em> Name the part to keep track of it
@@ -309,9 +334,9 @@ export default function App() {
 
                   <li><strong>Calculate Layout:</strong> Calculate the parts list layout based on the current settings.</li>
                   <li><strong>Reset All:</strong> Resets the whole application to its initial state.</li>
-                   <li><strong>+ Info</strong> View detailed information about the layout</li>
-                   <li><strong>CSV Report</strong> Download the results in a csv format</li>
-                   <li><strong>Print/PDF</strong> Download a PDF version of the results</li>
+                  <li><strong>+ Info</strong> View detailed information about the layout</li>
+                  <li><strong>CSV Report</strong> Download the results in a csv format</li>
+                  <li><strong>Print/PDF</strong> Download a PDF version of the results</li>
 
                 </ul>
               </div>
@@ -321,18 +346,18 @@ export default function App() {
 
         <div className="settings-box">
           <div className="input-group">
-            <label>Stock (″)<span className='req'>*</span></label>
-            <input type="number" value={stockLength} onChange={e => setStockLength(e.target.value)} required />
+            <label htmlFor="stockLength">Stock (″)<span className='req'>*</span></label>
+            <input id="stockLength" type="number" min={0} value={stockLength} onChange={e => setStockLength(e.target.value)} required />
           </div>
           <div className="input-group">
-            <label>Blade (″)<span className='req'>*</span></label>
-            <input type="number" step="0.001" value={kerf} onChange={e => setKerf(e.target.value)} required />
+            <label htmlFor="kerf">Blade (″)<span className='req'>*</span></label>
+            <input id="kerf" type="number" step="0.001" min={0} value={kerf} onChange={e => setKerf(e.target.value)} required />
           </div>
         </div>
 
         <div className="toggle-container">
           <label className="switch">
-            <input type="checkbox" checked={optimize} onChange={() => setOptimize(!optimize)} />
+            <input id="optimize" type="checkbox" checked={optimize} onChange={() => setOptimize(!optimize)} />
             <span className="slider round"></span>
           </label>
           <span className="toggle-label">Optimized Results (Full Kerf Logic)</span>
@@ -340,7 +365,7 @@ export default function App() {
 
         <div className="toggle-container">
           <label className="switch">
-            <input type="checkbox" checked={sortAsc} onChange={() => setSortAsc(!sortAsc)} />
+            <input id="sortAsc" type="checkbox" checked={sortAsc} onChange={() => setSortAsc(!sortAsc)} />
             <span className="slider round"></span>
           </label>
           <span className="toggle-label">Smallest First</span>
@@ -353,14 +378,14 @@ export default function App() {
               {!bulkFileName && (
                 <>
                   <button className="add-btn bulk" onClick={() => fileInputRef.current.click()}>Bulk</button>
-                  <button className="add-btn" onClick={() => setParts([...parts, { name: '', length: '', qty: '' }])}>+ Add</button>
+                  <button className="add-btn" onClick={() => setParts([...parts, { name: '', qty: '', length: '' }])}>+ Add</button>
                 </>
               )}
               {bulkFileName && (
                 <button className="add-btn reset-small" onClick={handleClearData}>Clear File</button>
               )}
             </div>
-            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".csv,.txt" onChange={handleBulkUpload} />
+            <input type="file" ref={fileInputRef} style={{ display: 'none' }} accept=".csv,.txt" onChange={handleBulkUpload} id='bulkFileInput' />
           </div>
 
           {bulkFileName && (
@@ -371,8 +396,8 @@ export default function App() {
 
           <div className="parts-labels">
             <span style={{ flex: '1.2' }}>Name</span>
-            <span>Length<span className='req'>*</span></span>
             <span>Qty<span className='req'>*</span></span>
+            <span>Length<span className='req'>*</span></span>
             <span style={{ flex: '0.3' }}></span>
           </div>
           <div className={`parts-scroll ${bulkFileName ? 'bulk-active' : ''}`}>
@@ -381,9 +406,9 @@ export default function App() {
               return (
                 <div key={i} className="part-entry-container">
                   <div className="part-entry">
-                    <input style={{ flex: '1.2' }} type="text" placeholder="P1" value={p.name} onChange={e => { const n = [...parts]; n[i].name = e.target.value; setParts(n); }} />
-                    <input type="number" placeholder="0.00" value={p.length} className={isTooLong ? 'error-border' : ''} onChange={e => { const n = [...parts]; n[i].length = e.target.value; setParts(n); }} />
-                    <input type="number" placeholder="0" value={p.qty} onChange={e => { const n = [...parts]; n[i].qty = e.target.value; setParts(n); }} />
+                    <input id={`part-name-${i}`} style={{ flex: '1.2' }} type="text" placeholder="Part Name" value={p.name} onChange={e => { const n = [...parts]; n[i].name = e.target.value; setParts(n); }} />
+                    <input id={`part-qty-${i}`} type="number" placeholder="0" min={0} value={p.qty} onChange={e => { const n = [...parts]; n[i].qty = e.target.value; setParts(n); }} />
+                    <input id={`part-length-${i}`} type="number" placeholder="0.00" min={0} value={p.length} className={isTooLong ? 'error-border' : ''} onChange={e => { const n = [...parts]; n[i].length = e.target.value; setParts(n); }} />
                     {!bulkFileName && <button className="del-btn" style={{ flex: '0.3' }} onClick={() => setParts(parts.filter((_, idx) => idx !== i))}>×</button>}
                   </div>
                   {isTooLong && <div className="error-text">! Part longer than stock</div>}
